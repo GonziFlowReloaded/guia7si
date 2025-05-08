@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interfaz Interactiva para Sistemas Expertos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .form-section {
+            display: none; /* Hidden by default, shown by JS */
+        }
+        .form-section.active {
+            display: block;
+        }
+        /* Custom scrollbar for results */
+        #resultArea::-webkit-scrollbar {
+            width: 8px;
+        }
+        #resultArea::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        #resultArea::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 10px;
+        }
+        #resultArea::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col items-center py-8 px-4">
+
+    <div class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-2xl">
+        <h1 class="text-3xl font-bold text-center text-gray-800 mb-8">Diagnóstico con Sistemas Expertos</h1>
+
+        <div class="mb-6">
+            <label for="sistemaSelector" class="block text-sm font-medium text-gray-700 mb-2">Selecciona un Sistema Experto:</label>
+            <select id="sistemaSelector" class="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150">
+                <option value="reglas">1. Sistema Basado en Reglas</option>
+                <option value="fuzzy">2. Sistema Experto Fuzzy</option>
+                <option value="probabilistico">3. Sistema Experto Probabilístico</option>
+            </select>
+        </div>
+
+        <div id="formsContainer" class="mb-6">
+            <div id="formReglas" class="form-section p-6 border border-gray-200 rounded-lg bg-gray-50">
+                <h3 class="text-lg font-semibold text-gray-700 mb-4">Síntomas (Sistema Basado en Reglas):</h3>
+                <p class="text-sm text-gray-600 mb-3">Selecciona los síntomas observados. Las mayúsculas/minúsculas no importan.</p>
+                <div id="sintomasReglasCheckboxes" class="space-y-2 text-sm">
+                    </div>
+            </div>
+
+            <div id="formFuzzy" class="form-section p-6 border border-gray-200 rounded-lg bg-gray-50">
+                <h3 class="text-lg font-semibold text-gray-700 mb-4">Métricas (Sistema Fuzzy):</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div>
+                        <label for="fuzzyConexion" class="block font-medium text-gray-700">Calidad Conexión (0-10):</label>
+                        <input type="number" id="fuzzyConexion" value="5" min="0" max="10" step="0.1" class="mt-1 w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label for="fuzzyPerdidaPaquetes" class="block font-medium text-gray-700">Pérdida Paquetes (0-100%):</label>
+                        <input type="number" id="fuzzyPerdidaPaquetes" value="10" min="0" max="100" step="1" class="mt-1 w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label for="fuzzyVelocidad" class="block font-medium text-gray-700">Velocidad (0-100 Mbps):</label>
+                        <input type="number" id="fuzzyVelocidad" value="50" min="0" max="100" step="1" class="mt-1 w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label for="fuzzyWifi" class="block font-medium text-gray-700">Señal WiFi (0-100%):</label>
+                        <input type="number" id="fuzzyWifi" value="70" min="0" max="100" step="1" class="mt-1 w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label for="fuzzyErrorDns" class="block font-medium text-gray-700">Errores DNS (0-10):</label>
+                        <input type="number" id="fuzzyErrorDns" value="1" min="0" max="10" step="0.1" class="mt-1 w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                </div>
+            </div>
+
+            <div id="formProbabilistico" class="form-section p-6 border border-gray-200 rounded-lg bg-gray-50">
+                <h3 class="text-lg font-semibold text-gray-700 mb-4">Evidencia (Sistema Probabilístico):</h3>
+                <p class="text-sm text-gray-600 mb-3">Marca los síntomas presentes.</p>
+                <div id="sintomasProbabilisticosCheckboxes" class="space-y-2 text-sm">
+                    </div>
+            </div>
+        </div>
+
+        <button id="diagnoseBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition duration-150 ease-in-out">
+            Obtener Diagnóstico
+        </button>
+
+        <div class="mt-8">
+            <h3 class="text-xl font-semibold text-gray-800 mb-3">Resultado del Diagnóstico:</h3>
+            <div id="resultArea" class="p-4 min-h-[100px] bg-gray-50 border border-gray-200 rounded-lg shadow-inner text-sm text-gray-700 whitespace-pre-wrap overflow-y-auto max-h-60">
+                Selecciona un sistema y proporciona los datos para ver el resultado.
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Helper function ---
+        function gebi(id) { return document.getElementById(id); }
+
+        // --- Sistema 1: Basado en Reglas (Lógica de experto_basado_en_reglas.py) ---
+        const diagnosticosPosibles_R = {
+            "sin_conexion": {
+                "ping_router_falla": "Verificar estado del router.",
+                "ping_externo_falla": "Contactar al ISP."
+            },
+            "conexion_intermitente": {
+                "conector_danado": "Reemplazar cable/conector.",
+                "default": "Verificar estabilidad del ISP."
+            },
+            "carga_lenta": {
+                "error_dns": "Revisar configuración DNS.",
+                "trafico_excesivo": "Limitar consumo ancho banda."
+            },
+            "wifi_debil": "Instalar repetidor Wi-Fi o mover router más cerca.",
+            "servidor_lento": "Verificar cableado y servidor interno."
+        };
+
+        const todosSintomasReglas = [];
+        for (const key in diagnosticosPosibles_R) {
+            todosSintomasReglas.push(key);
+            if (typeof diagnosticosPosibles_R[key] === 'object') {
+                for (const subKey in diagnosticosPosibles_R[key]) {
+                    if (subKey !== 'default') {
+                        todosSintomasReglas.push(subKey);
+                    }
+                }
+            }
+        }
+        const uniqueSintomasReglas = [...new Set(todosSintomasReglas)];
+
+
+        function diagnosticar_reglas(sintomas) {
+            const diagnostico_final = new Set();
+            const sintomas_lower = sintomas.map(s => s.toLowerCase());
+
+            for (const sintoma_principal in diagnosticosPosibles_R) {
+                if (sintomas_lower.includes(sintoma_principal.toLowerCase())) {
+                    const causas = diagnosticosPosibles_R[sintoma_principal];
+                    if (typeof causas === 'object') {
+                        let encontrado_sub_sintoma = false;
+                        for (const sub_sintoma in causas) {
+                            if (sub_sintoma.toLowerCase() !== "default" && sintomas_lower.includes(sub_sintoma.toLowerCase())) {
+                                diagnostico_final.add(causas[sub_sintoma]);
+                                encontrado_sub_sintoma = true;
+                            }
+                        }
+                        if (!encontrado_sub_sintoma && causas.default) {
+                            diagnostico_final.add(causas.default);
+                        }
+                    } else {
+                        diagnostico_final.add(causas);
+                    }
+                }
+            }
+
+            if (diagnostico_final.size === 0) {
+                return ["No se pudo determinar un diagnóstico con los síntomas proporcionados."];
+            }
+            return Array.from(diagnostico_final);
+        }
+
+        // --- Sistema 2: Experto Fuzzy (Lógica de experto_fuzzy.py) ---
+        function trimf_js(x, a, b, c) {
+            let izquierda;
+            if (a === b) {
+                izquierda = (x === a) ? 1.0 : 0.0;
+            } else {
+                izquierda = Math.max(0, (x - a) / (b - a));
+            }
+
+            let derecha;
+            if (b === c) {
+                derecha = (x === b) ? 1.0 : 0.0;
+            } else {
+                derecha = Math.max(0, (c - x) / (c - b));
+            }
+            // Cap values to be within [0,1] for each slope before min,
+            // this is implicitly handled by Math.max(0, slope) and the fact that
+            // if x is in range [a,b] for izq, izq_slope <=1, if x > b, izq_slope > 1
+            // if x is in range [b,c] for der, der_slope <=1, if x < b, der_slope > 1
+            // The Math.min will then correctly form the triangle.
+            return Math.min(izquierda, derecha);
+        }
+
+        const conexion_baja_js = (x) => trimf_js(x, 0, 0, 4);
+        const conexion_media_js = (x) => trimf_js(x, 2, 5, 8);
+        const conexion_alta_js = (x) => trimf_js(x, 6, 10, 10);
+
+        const velocidad_baja_js = (x) => trimf_js(x, 0, 0, 40);
+        const velocidad_media_js = (x) => trimf_js(x, 20, 50, 80);
+        const velocidad_alta_js = (x) => trimf_js(x, 60, 100, 100);
+
+        const wifi_baja_js = (x) => trimf_js(x, 0, 0, 40);
+        const wifi_media_js = (x) => trimf_js(x, 20, 50, 80);
+        const wifi_alta_js = (x) => trimf_js(x, 60, 100, 100);
+
+        const perdida_paquetes_baja_js = (x) => trimf_js(x, 0, 0, 20);
+        const perdida_paquetes_media_js = (x) => trimf_js(x, 10, 30, 60);
+        const perdida_paquetes_alta_js = (x) => trimf_js(x, 40, 100, 100);
+
+        const dns_bajo_js = (x) => trimf_js(x, 0, 0, 2);
+        const dns_medio_js = (x) => trimf_js(x, 1, 5, 9);
+        const dns_alto_js = (x) => trimf_js(x, 8, 10, 10);
+
+        const reglas_F = [
+            { label:'R1: SI conexion BAJA Y perdida_paquetes ALTA ENTONCES falla_router ALTA', func: (c,p,s,w,d) => Math.min(conexion_baja_js(c), perdida_paquetes_alta_js(p))},
+            { label:'R2: SI conexion BAJA Y perdida_paquetes MEDIA ENTONCES falla_router MEDIA', func: (c,p,s,w,d) => Math.min(conexion_baja_js(c), perdida_paquetes_media_js(p))},
+            { label:'R3: SI conexion MEDIA Y perdida_paquetes BAJA Y velocidad BAJA ENTONCES falla_cable MEDIA', func: (c,p,s,w,d) => Math.min(conexion_media_js(c), perdida_paquetes_baja_js(p), velocidad_baja_js(s))},
+            { label:'R4: SI velocidad BAJA Y perdida_paquetes MEDIA ENTONCES congestion ALTA', func: (c,p,s,w,d) => Math.min(velocidad_baja_js(s), perdida_paquetes_media_js(p))},
+            { label:'R5: SI error_dns ALTA ENTONCES problema_dns ALTA', func: (c,p,s,w,d) => dns_alto_js(d)},
+            { label:'R6: SI error_dns MEDIA ENTONCES problema_dns MEDIA', func: (c,p,s,w,d) => dns_medio_js(d)},
+            { label:'R7: SI wifi BAJA ENTONCES falla_cable MEDIA', func: (c,p,s,w,d) => wifi_baja_js(w)},
+            { label:'R8: SI wifi BAJA Y conexion BAJA ENTONCES problema_isp MEDIA', func: (c,p,s,w,d) => Math.min(wifi_baja_js(w), conexion_baja_js(c))},
+            { label:'R9: SI velocidad ALTA Y perdida_paquetes BAJA ENTONCES problema_isp BAJA', func: (c,p,s,w,d) => Math.min(velocidad_alta_js(s), perdida_paquetes_baja_js(p))},
+            { label:'R10: SI conexion BAJA Y velocidad BAJA ENTONCES problema_isp ALTA', func: (c,p,s,w,d) => Math.min(conexion_baja_js(c), velocidad_baja_js(s))},
+            { label:'R11: SI wifi ALTA Y velocidad ALTA ENTONCES congestion BAJA', func: (c,p,s,w,d) => Math.min(wifi_alta_js(w), velocidad_alta_js(s))},
+            { label:'R12: SI perdida_paquetes BAJA Y velocidad BAJA ENTONCES falla_cable ALTA', func: (c,p,s,w,d) => Math.min(perdida_paquetes_baja_js(p), velocidad_baja_js(s))},
+        ];
+
+        const causas_F = ['falla_router', 'falla_cable', 'problema_isp', 'problema_dns', 'congestion'];
+        const recomendaciones_F = {
+            'falla_router': 'Reiniciar o reemplazar el router y revisar su configuración.',
+            'falla_cable': 'Inspeccionar y sustituir cables de red dañados.',
+            'problema_isp': 'Contactar al ISP para verificar el estado del servicio.',
+            'problema_dns': 'Configurar correctamente el DNS o usar servidores alternativos.',
+            'congestion': 'Reducir tráfico de red o actualizar el ancho de banda.'
+        };
+
+        function diagnosticar_fuzzy(inputs) {
+            const { conexion, perdida_paquetes, velocidad, wifi, error_dns } = inputs;
+            let activacionesOutput = "Reglas activadas y sus grados de activación:\n";
+            const grados_causa = {};
+            causas_F.forEach(causa => grados_causa[causa] = 0);
+
+            let reglasActivadasTexto = [];
+
+            reglas_F.forEach(regla => {
+                const grado = regla.func(conexion, perdida_paquetes, velocidad, wifi, error_dns);
+                if (grado > 0) {
+                    reglasActivadasTexto.push(`  ${regla.label} → grado de activación: ${grado.toFixed(2)}`);
+                    causas_F.forEach(causa => {
+                        if (regla.label.toLowerCase().includes(causa.toLowerCase())) {
+                            grados_causa[causa] = Math.max(grados_causa[causa], grado);
+                        }
+                    });
+                }
+            });
+             if (reglasActivadasTexto.length >0) {
+                activacionesOutput += reglasActivadasTexto.join('\n');
+            } else {
+                activacionesOutput += "  Ninguna regla activada.";
+            }
+
+
+            let diagnostico = "No se pudo determinar un diagnóstico";
+            let max_grado = 0;
+            for (const causa in grados_causa) {
+                if (grados_causa[causa] > max_grado) {
+                    max_grado = grados_causa[causa];
+                    diagnostico = causa;
+                }
+            }
+            
+            let output = `Valores de entrada: ${JSON.stringify(inputs)}\n`;
+            output += activacionesOutput + "\n";
+            output += `Grados de pertenencia para cada causa posible: ${JSON.stringify(grados_causa, (k,v)=>v.toFixed?Number(v.toFixed(2)):v)}\n`;
+            
+            if (max_grado > 0) {
+                 output += `Diagnóstico (causa con mayor grado de pertenencia): ${diagnostico}\n`;
+                 output += `Recomendación para el diagnóstico: ${recomendaciones_F[diagnostico]}`;
+            } else {
+                output += `Diagnóstico: No se pudo determinar un diagnóstico con los valores proporcionados.`;
+            }
+            return output;
+        }
+
+        // --- Sistema 3: Probabilístico (Lógica de experto_probabilistico.py) ---
+        const priors_P = {
+            'Mantenimiento o fallas del ISP': 0.25,
+            'Problemas de DNS en equipos o router': 0.20,
+            'Cable de red dañado': 0.10,
+            'Señal Wi‑Fi débil en zonas alejadas': 0.15,
+            'Congestión o lentitud del servidor interno': 0.30,
+        };
+        const likelihoods_P = {
+            'Mantenimiento o fallas del ISP': { 'Sin conexión a Internet': 0.90, 'Conexión intermitente': 0.70, 'Lentitud al acceder al servidor interno': 0.30, 'Mensajes de error DNS': 0.20, 'Señal Wi‑Fi débil': 0.10, },
+            'Problemas de DNS en equipos o router': { 'Sin conexión a Internet': 0.60, 'Conexión intermitente': 0.40, 'Lentitud al acceder al servidor interno': 0.50, 'Mensajes de error DNS': 0.10, 'Señal Wi‑Fi débil': 0.10, },
+            'Cable de red dañado': { 'Sin conexión a Internet': 0.85, 'Conexión intermitente': 0.80, 'Lentitud al acceder al servidor interno': 0.60, 'Mensajes de error DNS': 0.30, 'Señal Wi‑Fi débil': 0.30, },
+            'Señal Wi‑Fi débil en zonas alejadas': { 'Sin conexión a Internet': 0.40, 'Conexión intermitente': 0.60, 'Lentitud al acceder al servidor interno': 0.30, 'Mensajes de error DNS': 0.10, 'Señal Wi‑Fi débil': 0.85, },
+            'Congestión o lentitud del servidor interno': { 'Sin conexión a Internet': 0.50, 'Conexión intermitente': 0.50, 'Lentitud al acceder al servidor interno': 0.20, 'Mensajes de error DNS': 0.90, 'Señal Wi‑Fi débil': 0.10, },
+        };
+        const symptoms_P = [
+            'Sin conexión a Internet', 'Conexión intermitente', 'Lentitud al acceder al servidor interno',
+            'Mensajes de error DNS', 'Señal Wi‑Fi débil',
+        ];
+        const acciones_P = {
+            'Mantenimiento o fallas del ISP': 'Contactar al ISP',
+            'Problemas de DNS en equipos o router': 'Revisar configuración de DNS en router y equipos',
+            'Cable de red dañado': 'Inspeccionar y reemplazar el cable de red',
+            'Señal Wi‑Fi débil en zonas alejadas': 'Reubicar router o instalar repetidor Wi‑Fi',
+            'Congestión o lentitud del servidor interno': 'Analizar carga y rendimiento del servidor interno',
+        };
+
+        function diagnosticar_probabilistico(evidencia) {
+            const posteriors = {};
+            for (const causa in priors_P) {
+                let score = priors_P[causa];
+                symptoms_P.forEach(sintoma => {
+                    const p_s_given_c = likelihoods_P[causa][sintoma];
+                    if (evidencia[sintoma] === 1) {
+                        score *= p_s_given_c;
+                    } else {
+                        score *= (1 - p_s_given_c);
+                    }
+                });
+                posteriors[causa] = score;
+            }
+
+            const total = Object.values(posteriors).reduce((sum, val) => sum + val, 0);
+            if (total === 0) {
+                 return "No se pudo determinar un diagnóstico con la evidencia proporcionada (probabilidades cero).";
+            }
+
+            for (const causa in posteriors) {
+                posteriors[causa] /= total;
+            }
+
+            const sortedPosteriors = Object.entries(posteriors).sort(([,a],[,b]) => b-a);
+            
+            let output = "Evidencia proporcionada:\n";
+            symptoms_P.forEach(s => {
+                output += `  - ${s}: ${evidencia[s] === 1 ? 'Presente' : 'Ausente'}\n`;
+            });
+            output += "\nProbabilidades Posteriores (Causas y sus probabilidades):\n";
+            sortedPosteriors.forEach(([causa, prob]) => {
+                output += `  - ${causa}: ${prob.toFixed(4)}\n`;
+            });
+
+            if (sortedPosteriors.length > 0) {
+                const [causa_mas_probable, prob_max] = sortedPosteriors[0];
+                output += `\nDiagnóstico más probable: ${causa_mas_probable} (Probabilidad: ${prob_max.toFixed(4)})\n`;
+                output += `Acción sugerida: ${acciones_P[causa_mas_probable]}`;
+            } else {
+                 output += "\nNo se pudo determinar un diagnóstico.";
+            }
+            return output;
+        }
+
+
+        // --- UI Logic ---
+        window.onload = function() {
+            const selector = gebi('sistemaSelector');
+            const forms = {
+                'reglas': gebi('formReglas'),
+                'fuzzy': gebi('formFuzzy'),
+                'probabilistico': gebi('formProbabilistico')
+            };
+            const diagnoseBtn = gebi('diagnoseBtn');
+            const resultDiv = gebi('resultArea');
+            const sintomasReglasContainer = gebi('sintomasReglasCheckboxes');
+            const sintomasProbContainer = gebi('sintomasProbabilisticosCheckboxes');
+
+            // Populate checkboxes for Rule-Based System
+            uniqueSintomasReglas.sort().forEach(sintoma => {
+                const div = document.createElement('div');
+                div.className = 'flex items-center';
+                const input = document.createElement('input');
+                input.type = 'checkbox';
+                input.id = `sregla_${sintoma.replace(/\s+/g, '_')}`;
+                input.name = 'sintoma_regla';
+                input.value = sintoma;
+                input.className = 'h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500';
+                const label = document.createElement('label');
+                label.htmlFor = input.id;
+                label.textContent = sintoma;
+                label.className = 'ml-2 block text-sm text-gray-900';
+                div.appendChild(input);
+                div.appendChild(label);
+                sintomasReglasContainer.appendChild(div);
+            });
+            
+            // Populate checkboxes for Probabilistic System
+            symptoms_P.forEach(sintoma => {
+                const div = document.createElement('div');
+                div.className = 'flex items-center';
+                const input = document.createElement('input');
+                input.type = 'checkbox';
+                input.id = `sprob_${sintoma.replace(/\s+/g, '_')}`;
+                input.name = 'sintoma_prob';
+                input.value = sintoma;
+                input.className = 'h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500';
+                const label = document.createElement('label');
+                label.htmlFor = input.id;
+                label.textContent = sintoma;
+                label.className = 'ml-2 block text-sm text-gray-900';
+                div.appendChild(input);
+                div.appendChild(label);
+                sintomasProbContainer.appendChild(div);
+            });
+
+
+            function updateFormVisibility() {
+                const selectedSystem = selector.value;
+                for (const key in forms) {
+                    forms[key].classList.remove('active');
+                }
+                forms[selectedSystem].classList.add('active');
+                resultDiv.textContent = 'Resultados aparecerán aquí.';
+            }
+
+            selector.onchange = updateFormVisibility;
+            
+            diagnoseBtn.onclick = function() {
+                const selectedSystem = selector.value;
+                let resultText = "";
+
+                try {
+                    if (selectedSystem === 'reglas') {
+                        const selectedSintomas = [];
+                        sintomasReglasContainer.querySelectorAll('input[type="checkbox"]:checked').forEach(cb => {
+                            selectedSintomas.push(cb.value);
+                        });
+                        if (selectedSintomas.length === 0) {
+                            resultText = "Por favor, selecciona al menos un síntoma para el sistema basado en reglas.";
+                        } else {
+                            const diagnostico = diagnosticar_reglas(selectedSintomas);
+                            resultText = `Síntomas seleccionados: ${selectedSintomas.join(', ')}\n\nDiagnóstico(s):\n- ${diagnostico.join('\n- ')}`;
+                        }
+                    } else if (selectedSystem === 'fuzzy') {
+                        const inputs = {
+                            conexion: parseFloat(gebi('fuzzyConexion').value),
+                            perdida_paquetes: parseFloat(gebi('fuzzyPerdidaPaquetes').value),
+                            velocidad: parseFloat(gebi('fuzzyVelocidad').value),
+                            wifi: parseFloat(gebi('fuzzyWifi').value),
+                            error_dns: parseFloat(gebi('fuzzyErrorDns').value)
+                        };
+                        // Basic validation
+                        if (Object.values(inputs).some(isNaN)) {
+                             resultText = "Por favor, ingresa valores numéricos válidos para todas las métricas del sistema fuzzy.";
+                        } else {
+                            resultText = diagnosticar_fuzzy(inputs);
+                        }
+                    } else if (selectedSystem === 'probabilistico') {
+                        const evidencia = {};
+                        symptoms_P.forEach(s => evidencia[s] = 0); // Initialize all as absent
+                        sintomasProbContainer.querySelectorAll('input[type="checkbox"]:checked').forEach(cb => {
+                            evidencia[cb.value] = 1; // Mark present
+                        });
+                        resultText = diagnosticar_probabilistico(evidencia);
+                    }
+                } catch (error) {
+                    console.error("Error en el diagnóstico:", error);
+                    resultText = `Se produjo un error al procesar el diagnóstico: ${error.message}\nConsulta la consola para más detalles.`;
+                }
+                resultDiv.textContent = resultText;
+            };
+
+            // Initialize view
+            updateFormVisibility();
+        };
+    </script>
+</body>
+</html>
