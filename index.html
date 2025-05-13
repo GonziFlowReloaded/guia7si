@@ -138,34 +138,46 @@
 
 
         function diagnosticar_reglas(sintomas) {
-            const diagnostico_final = new Set();
-            const sintomas_lower = sintomas.map(s => s.toLowerCase());
+    const diagnostico_final = new Set();
+    const explicaciones = [];
+    const sintomas_lower = sintomas.map(s => s.toLowerCase());
 
-            for (const sintoma_principal in diagnosticosPosibles_R) {
-                if (sintomas_lower.includes(sintoma_principal.toLowerCase())) {
-                    const causas = diagnosticosPosibles_R[sintoma_principal];
-                    if (typeof causas === 'object') {
-                        let encontrado_sub_sintoma = false;
-                        for (const sub_sintoma in causas) {
-                            if (sub_sintoma.toLowerCase() !== "default" && sintomas_lower.includes(sub_sintoma.toLowerCase())) {
-                                diagnostico_final.add(causas[sub_sintoma]);
-                                encontrado_sub_sintoma = true;
-                            }
-                        }
-                        if (!encontrado_sub_sintoma && causas.default) {
-                            diagnostico_final.add(causas.default);
-                        }
-                    } else {
-                        diagnostico_final.add(causas);
+    for (const sintoma_principal in diagnosticosPosibles_R) {
+        if (sintomas_lower.includes(sintoma_principal.toLowerCase())) {
+            const causas = diagnosticosPosibles_R[sintoma_principal];
+            if (typeof causas === 'object') {
+                let encontrado_sub_sintoma = false;
+                for (const sub_sintoma in causas) {
+                    if (sub_sintoma.toLowerCase() !== "default" && sintomas_lower.includes(sub_sintoma.toLowerCase())) {
+                        diagnostico_final.add(causas[sub_sintoma]);
+                        explicaciones.push(`Regla activada: SI ${sintoma_principal} Y ${sub_sintoma} → ENTONCES '${causas[sub_sintoma]}'`);
+                        encontrado_sub_sintoma = true;
                     }
                 }
+                if (!encontrado_sub_sintoma && causas.default) {
+                    diagnostico_final.add(causas.default);
+                    explicaciones.push(`Regla por defecto activada: SI ${sintoma_principal} → ENTONCES '${causas.default}'`);
+                }
+            } else {
+                diagnostico_final.add(causas);
+                explicaciones.push(`Regla activada: SI ${sintoma_principal} → ENTONCES '${causas}'`);
             }
-
-            if (diagnostico_final.size === 0) {
-                return ["No se pudo determinar un diagnóstico con los síntomas proporcionados."];
-            }
-            return Array.from(diagnostico_final);
         }
+    }
+
+    if (diagnostico_final.size === 0) {
+        return {
+            diagnosticos: ["No se pudo determinar un diagnóstico con los síntomas proporcionados."],
+            explicaciones: []
+        };
+    }
+
+    return {
+        diagnosticos: Array.from(diagnostico_final),
+        explicaciones: explicaciones
+    };
+}
+
 
         // --- Sistema 2: Experto Fuzzy (Lógica de experto_fuzzy.py) ---
         function trimf_js(x, a, b, c) {
@@ -424,17 +436,22 @@
 
                 try {
                     if (selectedSystem === 'reglas') {
-                        const selectedSintomas = [];
-                        sintomasReglasContainer.querySelectorAll('input[type="checkbox"]:checked').forEach(cb => {
-                            selectedSintomas.push(cb.value);
-                        });
-                        if (selectedSintomas.length === 0) {
-                            resultText = "Por favor, selecciona al menos un síntoma para el sistema basado en reglas.";
-                        } else {
-                            const diagnostico = diagnosticar_reglas(selectedSintomas);
-                            resultText = `Síntomas seleccionados: ${selectedSintomas.join(', ')}\n\nDiagnóstico(s):\n- ${diagnostico.join('\n- ')}`;
-                        }
-                    } else if (selectedSystem === 'fuzzy') {
+    const selectedSintomas = [];
+    sintomasReglasContainer.querySelectorAll('input[type="checkbox"]:checked').forEach(cb => {
+        selectedSintomas.push(cb.value);
+    });
+
+    if (selectedSintomas.length === 0) {
+        resultText = "Por favor, selecciona al menos un síntoma para el sistema basado en reglas.";
+    } else {
+        const resultado = diagnosticar_reglas(selectedSintomas);
+        resultText = `Síntomas seleccionados: ${selectedSintomas.join(', ')}\n\nDiagnóstico(s):\n- ${resultado.diagnosticos.join('\n- ')}`;
+        if (resultado.explicaciones.length > 0) {
+            resultText += `\n\nExplicación de reglas activadas:\n- ${resultado.explicaciones.join('\n- ')}`;
+        }
+    }
+}
+ else if (selectedSystem === 'fuzzy') {
                         const inputs = {
                             conexion: parseFloat(gebi('fuzzyConexion').value),
                             perdida_paquetes: parseFloat(gebi('fuzzyPerdidaPaquetes').value),
